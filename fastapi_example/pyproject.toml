@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "fastapi-example"
+version = "0.1.0"
+description = ""
+authors = ["acirtep <acirtep>"]
+readme = "README.md"
+packages = [{include = "mysite"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.110.1"
+sqlalchemy = "^2.0.29"
+alembic = "^1.13.1"
+uvicorn = "^0.29.0"
+flake8 = "^7.0.0"
+black = "^24.4.0"
+isort = "^5.13.2"
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+force_single_line = "true"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

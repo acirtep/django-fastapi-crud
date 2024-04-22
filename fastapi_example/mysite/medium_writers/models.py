@@ -1,0 +1,62 @@
+from sqlalchemy import Column
+from sqlalchemy import DateTime
+from sqlalchemy import ForeignKey
+from sqlalchemy import String
+from sqlalchemy import text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+
+from mysite.models import Base
+
+
+class Writer(Base):
+    __tablename__ = "fastapi_writer"
+    __table_args__ = {"comment": "general information about writers"}
+
+    writer_id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        index=True,
+        server_default=text(
+            "gen_random_uuid()",
+        ),
+        comment="unique identifier of the writer",
+    )
+    first_name = Column(String, comment="the first name of the writer")
+    last_name = Column(String, comment="the last name of the writer")
+    email = Column(
+        String, nullable=False, unique=True, comment="the email of the writer"
+    )
+    about = Column(String, comment="a short intro of the writer")
+    joined_timestamp = Column(
+        DateTime(timezone=True),
+        server_default=text("current_timestamp"),
+        comment="the date time in UTC, when the writer joined",
+        nullable=False,
+    )
+
+
+class WriterPartnerProgram(Base):
+    __tablename__ = "fastapi_partner_program"
+    __table_args__ = {"comment": "information about partner program at writer level"}
+
+    writer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("fastapi_writer.writer_id", ondelete="CASCADE"),
+        primary_key=True,
+        comment="unique identifier of the writer",
+    )
+    writer = relationship(Writer, passive_deletes=True, single_parent=True)
+
+    joined_timestamp = Column(
+        DateTime(timezone=True),
+        server_default=text("current_timestamp"),
+        comment="the date time in UTC, when the writer joined the partner program",
+        nullable=False,
+    )
+    payment_method = Column(
+        String, comment="the payment method of the partner program", nullable=False
+    )
+    writer_country_code = Column(
+        String, comment="the country iso code of the writer", nullable=False
+    )
