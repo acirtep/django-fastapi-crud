@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  django-crud-test-pg-service:
+    image: postgres:16.2
+    container_name: django_crud_test_postgres
+    networks:
+      - django-crud-test-local
+    ports:
+      - "5560:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=django_crud
+    volumes:
+      - ./postgres:/docker-entrypoint-initdb.d
+
+  django-crud-test-service:
+    image: django-crud
+    container_name: django_crud_test
+    command: tail -f /dev/null
+    build:
+      dockerfile: Dockerfile
+      args:
+        SOURCE_CODE_PATH: django_example
+    networks:
+      - django-crud-test-local
+    depends_on:
+      - django-crud-test-pg-service
+    links:
+      - django-crud-test-pg-service:postgres_db
+    volumes:
+      - ./django_example:/app
+
+networks:
+  django-crud-test-local:

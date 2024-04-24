@@ -1,23 +1,22 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from mysite import settings
 
-engine = create_engine(
+engine = create_async_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
-    connect_args={"options": "-c timezone=utc"},
-    echo=False,
+    echo=True,
 )
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-def get_db():
+async def get_db():
     db = SessionLocal()
     try:
         yield db
     except Exception as error:
-        db.rollback()
+        await db.rollback()
         raise error
     finally:
-        db.close()
+        await db.close()

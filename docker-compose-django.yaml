@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  django-crud-pg-service:
+    image: postgres:16.2
+    container_name: django_crud_postgres
+    networks:
+      - django-crud-local
+    ports:
+      - "5558:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=django_crud
+    volumes:
+      - ./postgres:/docker-entrypoint-initdb.d
+
+  django-crud-service:
+    image: django-crud
+    container_name: django_crud
+    command: bash /app/startup.sh
+    build:
+      dockerfile: Dockerfile
+      args:
+        SOURCE_CODE_PATH: django_example
+    networks:
+      - django-crud-local
+    depends_on:
+      - django-crud-pg-service
+    links:
+      - django-crud-pg-service:postgres_db
+    volumes:
+      - ./django_example:/app
+    ports:
+      - "3000:8080"
+
+networks:
+  django-crud-local:

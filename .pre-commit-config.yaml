@@ -1,0 +1,38 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-yaml
+        args: [ --unsafe ]
+      - id: end-of-file-fixer
+        files: '\.pyi?$'
+      - id: trailing-whitespace
+        files: '\.pyi?$'
+      - id: check-ast
+        files: '\.pyi?$'
+      - id: check-builtin-literals
+        files: '\.pyi?$'
+      - id: detect-private-key
+        files: '\.pyi?$'
+      - id: check-case-conflict
+        files: '\.pyi?$'
+      - id: pretty-format-json
+        files: '\.pyi?$'
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: [ "--line-length=120"]
+  - repo: https://github.com/psf/black
+    rev: 24.3.0
+    hooks:
+      - id: black
+        args: [ "--line-length=120"]
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        args: [--config, ./.flake8]
+        additional_dependencies:
+          - flake8-bugbear
+          - flake8-implicit-str-concat

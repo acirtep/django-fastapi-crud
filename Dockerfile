@@ -11,8 +11,6 @@ WORKDIR /app
 COPY ./README.md .
 COPY ./$SOURCE_CODE_PATH .
 
-RUN pip3 install psycopg2-binary --no-binary psycopg2-binary
-
 RUN pip3 install poetry==1.8.2
 
 RUN poetry config virtualenvs.create false
