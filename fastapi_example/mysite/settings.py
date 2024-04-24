@@ -1,1 +1,3 @@
-DATABASE_URL = "postgresql://postgres:postgres@postgres_db:5432/fastapi_crud"
+import os
+
+DATABASE_URL = os.getenv("DATABASE_URL")

@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  fastapi-crud-test-pg-service:
+    image: postgres:16.2
+    container_name: fastapi_crud_test_postgres
+    networks:
+      - fastapi-crud-test-local
+    ports:
+      - "5561:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=fastapi_crud_test
+    volumes:
+      - ./postgres:/docker-entrypoint-initdb.d
+
+  fastapi-crud-test-service:
+    image: fastapi-crud
+    container_name: fastapi_crud_test
+    command: tail -f /dev/null
+    build:
+      dockerfile: Dockerfile
+      args:
+        SOURCE_CODE_PATH: fastapi_example
+    networks:
+      - fastapi-crud-test-local
+    depends_on:
+      - fastapi-crud-test-pg-service
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://postgres:postgres@postgres_db:5432/fastapi_crud_test"
+    links:
+      - fastapi-crud-test-pg-service:postgres_db
+    volumes:
+      - ./fastapi_example:/app
+
+networks:
+  fastapi-crud-test-local:

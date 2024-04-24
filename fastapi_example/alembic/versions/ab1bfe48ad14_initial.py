@@ -1,8 +1,8 @@
-"""initial migration
+"""initial
 
-Revision ID: ad94f27b321e
-Revises: 
-Create Date: 2024-04-22 10:22:06.643531
+Revision ID: ab1bfe48ad14
+Revises:
+Create Date: 2024-04-24 08:40:57.738714
 
 """
 
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "ad94f27b321e"
+revision: str = "ab1bfe48ad14"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -31,28 +31,14 @@ def upgrade() -> None:
             nullable=False,
             comment="unique identifier of the writer",
         ),
-        sa.Column(
-            "first_name",
-            sa.String(),
-            nullable=True,
-            comment="the first name of the writer",
-        ),
-        sa.Column(
-            "last_name",
-            sa.String(),
-            nullable=True,
-            comment="the last name of the writer",
-        ),
-        sa.Column(
-            "email", sa.String(), nullable=False, comment="the email of the writer"
-        ),
-        sa.Column(
-            "about", sa.String(), nullable=True, comment="a short intro of the writer"
-        ),
+        sa.Column("first_name", sa.String(), nullable=True, comment="the first name of the writer"),
+        sa.Column("last_name", sa.String(), nullable=True, comment="the last name of the writer"),
+        sa.Column("email", sa.String(), nullable=False, comment="the email of the writer"),
+        sa.Column("about", sa.String(), nullable=True, comment="a short intro of the writer"),
         sa.Column(
             "joined_timestamp",
             sa.DateTime(timezone=True),
-            server_default=sa.text("current_timestamp"),
+            server_default=sa.text("statement_timestamp()"),
             nullable=False,
             comment="the date time in UTC, when the writer joined",
         ),
@@ -60,24 +46,14 @@ def upgrade() -> None:
         sa.UniqueConstraint("email"),
         comment="general information about writers",
     )
-    op.create_index(
-        op.f("ix_fastapi_writer_writer_id"),
-        "fastapi_writer",
-        ["writer_id"],
-        unique=False,
-    )
+    op.create_index(op.f("ix_fastapi_writer_writer_id"), "fastapi_writer", ["writer_id"], unique=False)
     op.create_table(
         "fastapi_partner_program",
-        sa.Column(
-            "writer_id",
-            sa.UUID(),
-            nullable=False,
-            comment="unique identifier of the writer",
-        ),
+        sa.Column("writer_id", sa.UUID(), nullable=False, comment="unique identifier of the writer"),
         sa.Column(
             "joined_timestamp",
             sa.DateTime(timezone=True),
-            server_default=sa.text("current_timestamp"),
+            server_default=sa.text("statement_timestamp()"),
             nullable=False,
             comment="the date time in UTC, when the writer joined the partner program",
         ),
@@ -85,17 +61,17 @@ def upgrade() -> None:
             "payment_method",
             sa.String(),
             nullable=False,
-            comment="the payment method of the partner program",
+            comment="the payment method of the partner program, eg: stripe",
         ),
+        sa.Column("country_code", sa.String(), nullable=False, comment="the country iso code of the writer"),
         sa.Column(
-            "writer_country_code",
-            sa.String(),
+            "active",
+            sa.Boolean(),
+            server_default=sa.text("true"),
             nullable=False,
-            comment="the country iso code of the writer",
+            comment="true if the partner program is active",
         ),
-        sa.ForeignKeyConstraint(
-            ["writer_id"], ["fastapi_writer.writer_id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["writer_id"], ["fastapi_writer.writer_id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("writer_id"),
         comment="information about partner program at writer level",
     )

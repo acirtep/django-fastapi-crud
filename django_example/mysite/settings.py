@@ -31,8 +31,8 @@ ALLOWED_HOSTS = ["0.0.0.0"]
 # Application definition
 
 INSTALLED_APPS = [
-    "medium_articles.apps.MediumArticlesConfig",
-    "medium_writers.apps.MediumWritersConfig",
+    "mysite.medium_articles.apps.MediumArticlesConfig",
+    "mysite.medium_writers.apps.MediumWritersConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",

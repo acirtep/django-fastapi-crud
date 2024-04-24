@@ -1,25 +1,25 @@
 from datetime import datetime
 
+from ninja import Schema
 from pydantic import UUID4
-from pydantic import BaseModel
 from pydantic import EmailStr
 from pydantic import Field
 
 
-class WriterInSchema(BaseModel):
+class WriterInSchema(Schema):
     first_name: str | None = Field(None, description="the first name of the writer")
     last_name: str | None = Field(None, description="the last name of the writer")
     email: EmailStr = Field(..., description="the email of the writer")
     about: str | None = Field(None, description="a short intro of the writer")
 
 
-class WriterPartnerProgramInSchema(BaseModel):
+class WriterPartnerProgramInSchema(Schema):
     country_code: str = Field(..., description="the country iso code of the writer", max_length=2)
     payment_method: str = Field("STRIPE", description="the payment method of the partner program, eg: stripe")
     active: bool = Field(True, description="true if the partner program is active")
 
 
-class WriterOutSchema(BaseModel):
+class WriterOutSchema(Schema):
     writer_id: UUID4 = Field(..., description="unique identifier of the writer")
     first_name: str | None = Field(None, description="the first name of the writer")
     last_name: str | None = Field(None, description="the last name of the writer")
