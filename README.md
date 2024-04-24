@@ -14,7 +14,9 @@ Pre-requisites:
 
 
 # Django
+
 Django docs: https://www.djangoproject.com/
+
 Django Ninja docs: https://django-ninja.dev/
 
 1. `make django_app`, to run the app at http://0.0.0.0:3000
@@ -22,8 +24,11 @@ Django Ninja docs: https://django-ninja.dev/
 
 
 # FastAPI
+
 FastAPI docs: https://fastapi.tiangolo.com/
+
 SQLAlchemy docs: https://docs.sqlalchemy.org/en/20/
+
 Alembic: https://alembic.sqlalchemy.org/en/latest/
 
 1. `make fastapi_app`, to run the app at http://0.0.0.0:3001
