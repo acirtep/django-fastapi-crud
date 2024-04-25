@@ -1,15 +1,15 @@
 from django.test import TestCase
 from ninja.testing import TestAsyncClient
 
-from mysite.medium_writers.api import medium_writers_router
-from mysite.medium_writers.models import Writer
-from mysite.medium_writers.models import WriterPartnerProgram
+from mysite.writers.api import writers_router
+from mysite.writers.models import Writer
+from mysite.writers.models import WriterPartnerProgram
 
 
 class TestWriter(TestCase):
 
     def setUp(self) -> None:
-        self.client = TestAsyncClient(medium_writers_router)
+        self.client = TestAsyncClient(writers_router)
 
         self.writer_obj = Writer.objects.create(
             first_name="string", last_name="string", email="user@example.com", about="me"

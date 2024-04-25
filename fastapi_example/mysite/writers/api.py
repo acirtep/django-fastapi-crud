@@ -9,16 +9,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from mysite.database import get_db
-from mysite.medium_writers.models import Writer
-from mysite.medium_writers.models import WriterPartnerProgram
-from mysite.medium_writers.schemas import WriterInSchema
-from mysite.medium_writers.schemas import WriterOutSchema
-from mysite.medium_writers.schemas import WriterPartnerProgramInSchema
+from mysite.writers.models import Writer
+from mysite.writers.models import WriterPartnerProgram
+from mysite.writers.schemas import WriterInSchema
+from mysite.writers.schemas import WriterOutSchema
+from mysite.writers.schemas import WriterPartnerProgramInSchema
 
-medium_writers_router = APIRouter(prefix="/medium-writers")
+writers_router = APIRouter(prefix="/writers")
 
 
-@medium_writers_router.post("", response_model=WriterOutSchema)
+@writers_router.post("", response_model=WriterOutSchema)
 async def create_writer(input_data: WriterInSchema, db: AsyncSession = Depends(get_db)):
     writer_obj = await db.scalar(select(Writer).where(Writer.email == input_data.email))
     if writer_obj:
@@ -37,12 +37,12 @@ async def create_writer(input_data: WriterInSchema, db: AsyncSession = Depends(g
     return writer_obj
 
 
-@medium_writers_router.get("", response_model=List[WriterOutSchema])
+@writers_router.get("", response_model=List[WriterOutSchema])
 async def list_writers(db: AsyncSession = Depends(get_db)):
     return await db.scalars(select(Writer).order_by(Writer.joined_timestamp))
 
 
-@medium_writers_router.get("/{writer_id}", response_model=WriterOutSchema)
+@writers_router.get("/{writer_id}", response_model=WriterOutSchema)
 async def get_writer(writer_id: UUID4, db: AsyncSession = Depends(get_db)):
     writer_obj = await db.scalar(
         select(Writer).options(joinedload(Writer.partner_program)).where(Writer.writer_id == writer_id)
@@ -53,7 +53,7 @@ async def get_writer(writer_id: UUID4, db: AsyncSession = Depends(get_db)):
     return writer_obj
 
 
-@medium_writers_router.put("/{writer_id}", response_model=WriterOutSchema)
+@writers_router.put("/{writer_id}", response_model=WriterOutSchema)
 async def update_writer(writer_id: UUID4, input_data: WriterInSchema, db: AsyncSession = Depends(get_db)):
     writer_obj = await db.scalar(select(Writer).where(Writer.email == input_data.email, Writer.writer_id != writer_id))
     if writer_obj:
@@ -75,7 +75,7 @@ async def update_writer(writer_id: UUID4, input_data: WriterInSchema, db: AsyncS
     return writer_obj
 
 
-@medium_writers_router.delete("/{writer_id}")
+@writers_router.delete("/{writer_id}")
 async def delete_writer(writer_id: UUID4, db: AsyncSession = Depends(get_db)):
     writer_obj = await db.scalar(select(Writer).where(Writer.writer_id == writer_id))
     if not writer_obj:
@@ -85,7 +85,7 @@ async def delete_writer(writer_id: UUID4, db: AsyncSession = Depends(get_db)):
     return {"success": True}
 
 
-@medium_writers_router.post("/partner-program/{writer_id}")
+@writers_router.post("/partner-program/{writer_id}")
 async def update_partner_program(
     writer_id: UUID4, input_data: WriterPartnerProgramInSchema, db: AsyncSession = Depends(get_db)
 ):
