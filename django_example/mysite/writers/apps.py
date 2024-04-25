@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class MediumWritersConfig(AppConfig):
+class WritersConfig(AppConfig):
     default_auto_field = "django.db.models.UUIDField"
-    name = "mysite.medium_writers"
+    name = "mysite.writers"

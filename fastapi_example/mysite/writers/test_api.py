@@ -6,8 +6,8 @@ from sqlalchemy import select
 
 from mysite.database import SessionLocal
 from mysite.main import app
-from mysite.medium_writers.models import Writer
-from mysite.medium_writers.models import WriterPartnerProgram
+from mysite.writers.models import Writer
+from mysite.writers.models import WriterPartnerProgram
 
 
 @pytest.mark.asyncio(scope="class")
@@ -42,7 +42,7 @@ class TestWriter:
         await self.writer_id()
         async with AsyncClient(base_url="http://test", transport=ASGITransport(app=app)) as client:
             response = await client.post(
-                "/api/v1/fastapi/medium-writers",
+                "/api/v1/fastapi/writers",
                 json={"first_name": "string", "last_name": "string", "email": "user@example.com", "about": "string"},
             )
 
@@ -51,7 +51,7 @@ class TestWriter:
     async def test_create_ok(self):
         async with AsyncClient(base_url="http://test", transport=ASGITransport(app=app)) as client:
             response = await client.post(
-                "/api/v1/fastapi/medium-writers",
+                "/api/v1/fastapi/writers",
                 json={"first_name": "string", "last_name": "string", "email": "user1@example.com", "about": "string"},
             )
 
@@ -66,7 +66,7 @@ class TestWriter:
         writer_id = await self.writer_id()
         async with AsyncClient(base_url="http://test", transport=ASGITransport(app=app)) as client:
             response = await client.put(
-                f"/api/v1/fastapi/medium-writers/{writer_id}",
+                f"/api/v1/fastapi/writers/{writer_id}",
                 json={
                     "first_name": "string new",
                     "last_name": "string",
@@ -80,7 +80,7 @@ class TestWriter:
 
     async def test_list(self):
         async with AsyncClient(base_url="http://test", transport=ASGITransport(app=app)) as client:
-            response = await client.get("/api/v1/fastapi/medium-writers")
+            response = await client.get("/api/v1/fastapi/writers")
         assert response.status_code == 200
         assert len(response.json()) == 2
 
@@ -89,7 +89,7 @@ class TestWriter:
         await self.partner_program_id()
 
         async with AsyncClient(base_url="http://test", transport=ASGITransport(app=app)) as client:
-            response = await client.get(f"/api/v1/fastapi/medium-writers/{writer_id}")
+            response = await client.get(f"/api/v1/fastapi/writers/{writer_id}")
         assert response.status_code == 200
         response_data = response.json()
         assert response_data["writer_id"] == str(writer_id)
@@ -98,11 +98,11 @@ class TestWriter:
     async def test_delete(self):
         writer_id = await self.writer_id()
         async with AsyncClient(base_url="http://test", transport=ASGITransport(app=app)) as client:
-            response = await client.delete(f"/api/v1/fastapi/medium-writers/{writer_id}")
+            response = await client.delete(f"/api/v1/fastapi/writers/{writer_id}")
         assert response.status_code == 200
 
         async with AsyncClient(base_url="http://test", transport=ASGITransport(app=app)) as client:
-            response = await client.get(f"/api/v1/fastapi/medium-writers/{writer_id}")
+            response = await client.get(f"/api/v1/fastapi/writers/{writer_id}")
         assert response.status_code == 404
 
     async def test_update_partner_program(self):
@@ -111,12 +111,12 @@ class TestWriter:
 
         async with AsyncClient(base_url="http://test", transport=ASGITransport(app=app)) as client:
             response = await client.post(
-                f"/api/v1/fastapi/medium-writers/partner-program/{writer_id}",
+                f"/api/v1/fastapi/writers/partner-program/{writer_id}",
                 json={"active": False, "country_code": "AB", "payment_method": "abcd"},
             )
 
         assert response.status_code == 200
 
         async with AsyncClient(base_url="http://test", transport=ASGITransport(app=app)) as client:
-            response = await client.get(f"/api/v1/fastapi/medium-writers/{writer_id}")
+            response = await client.get(f"/api/v1/fastapi/writers/{writer_id}")
         assert not response.json()["partner_program_status"]

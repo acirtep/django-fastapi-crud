@@ -6,16 +6,16 @@ from ninja import Router
 from ninja.errors import HttpError
 from pydantic import UUID4
 
-from mysite.medium_writers.models import Writer
-from mysite.medium_writers.models import WriterPartnerProgram
-from mysite.medium_writers.schemas import WriterInSchema
-from mysite.medium_writers.schemas import WriterOutSchema
-from mysite.medium_writers.schemas import WriterPartnerProgramInSchema
+from mysite.writers.models import Writer
+from mysite.writers.models import WriterPartnerProgram
+from mysite.writers.schemas import WriterInSchema
+from mysite.writers.schemas import WriterOutSchema
+from mysite.writers.schemas import WriterPartnerProgramInSchema
 
-medium_writers_router = Router()
+writers_router = Router()
 
 
-@medium_writers_router.post("", response=WriterOutSchema)
+@writers_router.post("", response=WriterOutSchema)
 async def create_writer(request, input_data: WriterInSchema):
     writer_obj = await Writer.objects.filter(email=input_data.email).afirst()
     if writer_obj:
@@ -26,17 +26,17 @@ async def create_writer(request, input_data: WriterInSchema):
     )
 
 
-@medium_writers_router.get("", response=List[WriterOutSchema])
+@writers_router.get("", response=List[WriterOutSchema])
 async def list_writers(request):
     return await sync_to_async(list)(Writer.objects.all().order_by("joined_timestamp"))
 
 
-@medium_writers_router.get("/{writer_id}", response=WriterOutSchema)
+@writers_router.get("/{writer_id}", response=WriterOutSchema)
 async def get_writer(request, writer_id: UUID4):
     return await aget_object_or_404(Writer, writer_id=writer_id)
 
 
-@medium_writers_router.put("/{writer_id}", response=WriterOutSchema)
+@writers_router.put("/{writer_id}", response=WriterOutSchema)
 async def update_writer(request, writer_id: UUID4, input_data: WriterInSchema):
     writer_obj = await Writer.objects.filter(email=input_data.email).exclude(writer_id=writer_id).afirst()
     if writer_obj:
@@ -54,7 +54,7 @@ async def update_writer(request, writer_id: UUID4, input_data: WriterInSchema):
     return writer_obj
 
 
-@medium_writers_router.delete("/{writer_id}")
+@writers_router.delete("/{writer_id}")
 async def delete_writer(request, writer_id: UUID4):
     writer_obj = await aget_object_or_404(Writer, writer_id=writer_id)
     await writer_obj.adelete()
@@ -62,7 +62,7 @@ async def delete_writer(request, writer_id: UUID4):
     return {"success": True}
 
 
-@medium_writers_router.post("/partner-program/{writer_id}")
+@writers_router.post("/partner-program/{writer_id}")
 async def update_partner_program(request, writer_id: UUID4, input_data: WriterPartnerProgramInSchema):
     await WriterPartnerProgram.objects.aupdate_or_create(
         writer_id=writer_id,

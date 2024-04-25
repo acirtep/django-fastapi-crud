@@ -54,7 +54,7 @@ class Migration(migrations.Migration):
                         primary_key=True,
                         related_name="partner_program",
                         serialize=False,
-                        to="medium_writers.writer",
+                        to="writers.writer",
                     ),
                 ),
                 (
