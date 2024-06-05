@@ -1,13 +1,17 @@
 from typing import List
 
 from asgiref.sync import sync_to_async
+from django.db.models import Prefetch
 from django.shortcuts import aget_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
 from pydantic import UUID4
 
+from mysite.articles.constants import ArticleStatus
+from mysite.articles.models import Article
 from mysite.writers.models import Writer
 from mysite.writers.models import WriterPartnerProgram
+from mysite.writers.schemas import WriterExtendedOutSchema
 from mysite.writers.schemas import WriterInSchema
 from mysite.writers.schemas import WriterOutSchema
 from mysite.writers.schemas import WriterPartnerProgramInSchema
@@ -31,9 +35,22 @@ async def list_writers(request):
     return await sync_to_async(list)(Writer.objects.all().order_by("joined_timestamp"))
 
 
-@writers_router.get("/{writer_id}", response=WriterOutSchema)
+@writers_router.get("/{writer_id}", response=WriterExtendedOutSchema)
 async def get_writer(request, writer_id: UUID4):
-    return await aget_object_or_404(Writer, writer_id=writer_id)
+    most_recent_articles = (
+        Article.objects.filter(writer_id=writer_id, article_status=ArticleStatus.published)
+        .order_by("-date_first_published")
+        .values_list("article_id", flat=True)[:2]
+    )
+    return await aget_object_or_404(
+        Writer.objects.prefetch_related(
+            Prefetch(
+                "articles",
+                queryset=Article.objects.filter(article_id__in=most_recent_articles).order_by("-date_first_published"),
+            )
+        ),
+        writer_id=writer_id,
+    )
 
 
 @writers_router.put("/{writer_id}", response=WriterOutSchema)

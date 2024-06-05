@@ -1,6 +1,11 @@
+from datetime import datetime
+from datetime import timezone
+
 from django.test import TestCase
 from ninja.testing import TestAsyncClient
 
+from mysite.articles.constants import ArticleStatus
+from mysite.articles.models import Article
 from mysite.writers.api import writers_router
 from mysite.writers.models import Writer
 from mysite.writers.models import WriterPartnerProgram
@@ -56,11 +61,39 @@ class TestWriter(TestCase):
         assert len(response.json()) == 1
 
     async def test_get(self):
+        article_published_1_obj = await Article.objects.acreate(
+            article_name="Main published article",
+            writer_id=self.writer_obj.writer_id,
+            date_first_published=datetime.now().astimezone(tz=timezone.utc),
+            article_status=ArticleStatus.published,
+        )
+        await Article.objects.acreate(
+            article_name="Main draft article", writer_id=self.writer_obj.writer_id, article_status=ArticleStatus.draft
+        )
+
+        article_published_2_obj = await Article.objects.acreate(
+            article_name="First published article",
+            writer_id=self.writer_obj.writer_id,
+            date_first_published=datetime.now().astimezone(tz=timezone.utc),
+            article_status=ArticleStatus.published,
+            members_only_flag=True,
+        )
+
         response = await self.client.get(f"/{self.writer_obj.writer_id}")
         assert response.status_code == 200
         response_data = response.json()
         assert response_data["writer_id"] == str(self.writer_obj.writer_id)
         assert response_data["partner_program_status"]
+        assert response_data["articles"][0] == {
+            "article_id": str(article_published_2_obj.article_id),
+            "article_name": article_published_2_obj.article_name,
+            "members_only_flag": article_published_2_obj.members_only_flag,
+        }
+        assert response_data["articles"][1] == {
+            "article_id": str(article_published_1_obj.article_id),
+            "article_name": article_published_1_obj.article_name,
+            "members_only_flag": article_published_1_obj.members_only_flag,
+        }
 
     async def test_delete(self):
         response = await self.client.delete(f"/{self.writer_obj.writer_id}")

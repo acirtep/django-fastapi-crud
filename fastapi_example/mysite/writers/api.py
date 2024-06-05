@@ -6,11 +6,15 @@ from fastapi import HTTPException
 from pydantic import UUID4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm import joinedload
 
+from mysite.articles.constants import ArticleStatus
+from mysite.articles.models import Article
 from mysite.database import get_db
 from mysite.writers.models import Writer
 from mysite.writers.models import WriterPartnerProgram
+from mysite.writers.schemas import WriterExtendedOutSchema
 from mysite.writers.schemas import WriterInSchema
 from mysite.writers.schemas import WriterOutSchema
 from mysite.writers.schemas import WriterPartnerProgramInSchema
@@ -42,10 +46,22 @@ async def list_writers(db: AsyncSession = Depends(get_db)):
     return await db.scalars(select(Writer).order_by(Writer.joined_timestamp))
 
 
-@writers_router.get("/{writer_id}", response_model=WriterOutSchema)
+@writers_router.get("/{writer_id}", response_model=WriterExtendedOutSchema)
 async def get_writer(writer_id: UUID4, db: AsyncSession = Depends(get_db)):
+    article_subquery = (
+        select(Article.article_id, Article.writer_id)
+        .where(Article.writer_id == writer_id, Article.article_status == ArticleStatus.published.value)
+        .order_by(Article.date_first_published.desc())
+        .limit(2)
+    ).subquery("article_subquery")
+
     writer_obj = await db.scalar(
-        select(Writer).options(joinedload(Writer.partner_program)).where(Writer.writer_id == writer_id)
+        select(Writer)
+        .join(article_subquery, article_subquery.c.writer_id == Writer.writer_id, isouter=True)
+        .join(Article, Article.article_id == article_subquery.c.article_id, isouter=True)
+        .options(contains_eager(Writer.articles))
+        .options(joinedload(Writer.partner_program))
+        .where(Writer.writer_id == writer_id)
     )
     if not writer_obj:
         raise HTTPException(status_code=404, detail="Writer not found")
