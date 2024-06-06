@@ -7,7 +7,7 @@ from mysite.writers.api import writers_router
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
+app = FastAPI(swagger_ui_parameters={"displayRequestDuration": True})
 
 app.include_router(writers_router, prefix="/api/v1/fastapi")
 app.include_router(articles_router, prefix="/api/v1/fastapi")

@@ -4,10 +4,11 @@ from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import HTTPException
 from pydantic import UUID4
+from sqlalchemy import desc
+from sqlalchemy import func
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import contains_eager
-from sqlalchemy.orm import joinedload
 
 from mysite.articles.constants import ArticleStatus
 from mysite.articles.models import Article
@@ -49,20 +50,48 @@ async def list_writers(db: AsyncSession = Depends(get_db)):
 @writers_router.get("/{writer_id}", response_model=WriterExtendedOutSchema)
 async def get_writer(writer_id: UUID4, db: AsyncSession = Depends(get_db)):
     article_subquery = (
-        select(Article.article_id, Article.writer_id)
+        select(
+            Article.article_id,
+            Article.writer_id,
+            Article.article_name,
+            Article.members_only_flag,
+            Article.date_first_published,
+        )
         .where(Article.writer_id == writer_id, Article.article_status == ArticleStatus.published.value)
         .order_by(Article.date_first_published.desc())
         .limit(2)
     ).subquery("article_subquery")
 
-    writer_obj = await db.scalar(
-        select(Writer)
-        .join(article_subquery, article_subquery.c.writer_id == Writer.writer_id, isouter=True)
-        .join(Article, Article.article_id == article_subquery.c.article_id, isouter=True)
-        .options(contains_eager(Writer.articles))
-        .options(joinedload(Writer.partner_program))
-        .where(Writer.writer_id == writer_id)
-    )
+    writer_obj = (
+        await db.execute(
+            select(
+                Writer.writer_id,
+                Writer.first_name,
+                Writer.last_name,
+                Writer.email,
+                Writer.about,
+                Writer.joined_timestamp,
+                WriterPartnerProgram.active.label("partner_program_status"),
+                func.array_agg(
+                    aggregate_order_by(
+                        func.jsonb_build_object(
+                            "article_id",
+                            article_subquery.c.article_id,
+                            "article_name",
+                            article_subquery.c.article_name,
+                            "members_only_flag",
+                            article_subquery.c.members_only_flag,
+                        ),
+                        desc(article_subquery.c.date_first_published),
+                    )
+                ).label("articles"),
+            )
+            .join(WriterPartnerProgram, WriterPartnerProgram.writer_id == Writer.writer_id, isouter=True)
+            .join(article_subquery, article_subquery.c.writer_id == Writer.writer_id, isouter=True)
+            .where(Writer.writer_id == writer_id)
+            .group_by(Writer, WriterPartnerProgram.writer_id, WriterPartnerProgram.active)
+        )
+    ).first()
     if not writer_obj:
         raise HTTPException(status_code=404, detail="Writer not found")
 

@@ -1,7 +1,10 @@
 from typing import List
 
 from asgiref.sync import sync_to_async
-from django.db.models import Prefetch
+from django.contrib.postgres.aggregates import ArrayAgg
+from django.db.models import OuterRef
+from django.db.models import Subquery
+from django.db.models.functions import JSONObject
 from django.shortcuts import aget_object_or_404
 from ninja import Router
 from ninja.errors import HttpError
@@ -37,20 +40,42 @@ async def list_writers(request):
 
 @writers_router.get("/{writer_id}", response=WriterExtendedOutSchema)
 async def get_writer(request, writer_id: UUID4):
-    most_recent_articles = (
+    article_selection = (
         Article.objects.filter(writer_id=writer_id, article_status=ArticleStatus.published)
-        .order_by("-date_first_published")
-        .values_list("article_id", flat=True)[:2]
+        .values_list("article_id", flat=True)
+        .order_by("-date_first_published")[:2]
     )
-    return await aget_object_or_404(
-        Writer.objects.prefetch_related(
-            Prefetch(
-                "articles",
-                queryset=Article.objects.filter(article_id__in=most_recent_articles).order_by("-date_first_published"),
+
+    article_agg_subquery = Subquery(
+        Article.objects.filter(writer_id=OuterRef("writer_id"), article_id__in=article_selection)
+        .values("writer_id")
+        .annotate(
+            articles_agg=ArrayAgg(
+                JSONObject(article_id="article_id", article_name="article_name", members_only_flag="members_only_flag"),
+                ordering="-date_first_published",
             )
-        ),
-        writer_id=writer_id,
+        )
+        .values("articles_agg")
     )
+
+    writer_obj = await (
+        Writer.objects.annotate(articles_agg=article_agg_subquery)
+        .filter(writer_id=writer_id)
+        .values(
+            "writer_id",
+            "first_name",
+            "last_name",
+            "email",
+            "about",
+            "joined_timestamp",
+            "partner_program_status",
+            "articles_agg",
+        )
+    ).afirst()
+    if not writer_obj:
+        raise HttpError(status_code=404, message="Not found")
+
+    return writer_obj
 
 
 @writers_router.put("/{writer_id}", response=WriterOutSchema)

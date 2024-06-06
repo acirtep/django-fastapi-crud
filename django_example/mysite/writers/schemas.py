@@ -36,4 +36,4 @@ class ArticleOutSchema(Schema):
 
 
 class WriterExtendedOutSchema(WriterOutSchema):
-    articles: list[ArticleOutSchema] | None = Field(None, description="last 2 published articles")
+    articles: list[ArticleOutSchema] | None = Field(None, description="last 2 published articles", alias="articles_agg")
