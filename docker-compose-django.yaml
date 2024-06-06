@@ -14,6 +14,7 @@ services:
       - POSTGRES_DB=django_crud
     volumes:
       - ./postgres:/docker-entrypoint-initdb.d
+    command: "-c log_filename=postgresql.log -c log_statement=all"
 
   django-crud-service:
     image: django-crud
@@ -32,7 +33,7 @@ services:
     volumes:
       - ./django_example:/app
     ports:
-      - "3000:8080"
+      - "3010:8080"
 
 networks:
   django-crud-local:

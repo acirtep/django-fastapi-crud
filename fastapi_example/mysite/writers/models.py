@@ -41,6 +41,8 @@ class Writer(Base):
     )
     partner_program_status = association_proxy(target_collection="partner_program", attr="active")
 
+    articles = relationship("Article", back_populates="writer", viewonly=True)
+
 
 class WriterPartnerProgram(Base):
     __tablename__ = "fastapi_partner_program"

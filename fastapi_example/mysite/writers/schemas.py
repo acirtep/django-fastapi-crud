@@ -27,3 +27,13 @@ class WriterOutSchema(BaseModel):
     about: str | None = Field(None, description="a short intro of the writer")
     joined_timestamp: datetime = Field(..., description="the date time in UTC, when the writer joined")
     partner_program_status: bool | None = Field(None, description="the partner program status of the writer")
+
+
+class ArticleOutSchema(BaseModel):
+    article_id: UUID4 | None = Field(None, description="unique identifier of the article")
+    article_name: str | None = Field(None, description="the name of the article")
+    members_only_flag: bool | None = Field(None, description="true if it is a members only article")
+
+
+class WriterExtendedOutSchema(WriterOutSchema):
+    articles: list[ArticleOutSchema] | None = Field(None, description="last 2 published articles")
