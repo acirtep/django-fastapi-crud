@@ -7,7 +7,7 @@ The scope of it is for learning purposes only and it is the base for the followi
 1. [Django and FastAPI: Introduction](https://medium.com/@petrica.leuca/7a2b55c7da27?sk=6db4c4e36c5adce6e052f6cee1844d5d)
 2. [Django and FastAPI: One To One Relationships](https://medium.com/@petrica.leuca/4ea1f11b8986?source=friends_link&sk=1287df230b6ed4f9d759ed60e97208ab)
 3. [Django and FastAPI: One To Many Relationships](https://medium.com/@petrica.leuca/320602329fd2?source=friends_link&sk=1b34bd36b546ee5f32c82e3d43609517)
-
+4. [Django and FastAPI: Many To Many Relationships](https://medium.com/@petrica.leuca/django-and-fastapi-many-to-many-relationships-4d37487d7c8a)
 
 Pre-requisites:
 1. docker

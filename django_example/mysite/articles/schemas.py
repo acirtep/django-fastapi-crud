@@ -1,10 +1,42 @@
 from datetime import datetime
+from string import capwords
+from typing import Annotated
 
 from ninja import Schema
 from pydantic import UUID4
+from pydantic import AfterValidator
 from pydantic import Field
+from pydantic import field_validator
+from pydantic_core import PydanticCustomError
 
 from mysite.articles.constants import ArticleStatus
+
+
+def string_to_capwords(input_string: str | None) -> str | None:
+    if not input_string:
+        return None
+    return capwords(input_string)
+
+
+CapWordsString = Annotated[str, AfterValidator(string_to_capwords)]
+
+
+class TagSchema(Schema):
+    tag_name: CapWordsString = Field(..., max_length=70, description="The tag name")
+
+
+class TagInSchema(Schema):
+    tags: list[TagSchema] | None = Field(None, max_length=5, description="the list of tags of the article")
+
+    @field_validator("tags")
+    @classmethod
+    def validate_unique_tags(cls, tags: list[TagSchema] | None) -> list[TagSchema] | None:
+        if not tags:
+            return None
+        tag_name_list = [tag.tag_name for tag in tags]
+        if len(tag_name_list) == len(set(tag_name_list)):
+            return tags
+        raise PydanticCustomError("unique_list", "List must be unique")
 
 
 class ArticleInSchema(Schema):
@@ -31,3 +63,4 @@ class WriterOutSchema(Schema):
 
 class ArticleExtendedOutSchema(ArticleOutSchema):
     writer: WriterOutSchema = Field(..., description="information about the writer of the article")
+    tags: list[TagSchema] | None = Field(None, max_length=5, description="the list of tags of the article")
