@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from mysite.articles.constants import ArticleStatus
 from mysite.articles.models import Article
+from mysite.articles.models import Tag
 from mysite.database import SessionLocal
 from mysite.writers.models import Writer
 from mysite.writers.models import WriterPartnerProgram
@@ -34,6 +35,20 @@ async def initial_load():
             await db.commit()
             await db.refresh(writer_partner_program_obj)
 
+        tag_1_obj = await db.scalar(select(Tag).where(Tag.tag_name == "Tag Name 1"))
+        if not tag_1_obj:
+            tag_1_obj = Tag(tag_name="Tag Name 1")
+            db.add(tag_1_obj)
+            await db.commit()
+            await db.refresh(tag_1_obj)
+
+        tag_2_obj = await db.scalar(select(Tag).where(Tag.tag_name == "Tag Name 2"))
+        if not tag_2_obj:
+            tag_2_obj = Tag(tag_name="Tag Name 2")
+            db.add(tag_2_obj)
+            await db.commit()
+            await db.refresh(tag_2_obj)
+
         article_1_obj = await db.scalar(
             select(Article).where(Article.article_name == "Test 1 article", Article.writer_id == writer_id)
         )
@@ -44,6 +59,7 @@ async def initial_load():
                 writer_id=writer_id,
                 article_status=ArticleStatus.published.value,
                 members_only_flag=True,
+                tags=[tag_1_obj, tag_2_obj],
             )
             db.add(article_1_obj)
             await db.commit()
@@ -59,6 +75,7 @@ async def initial_load():
                 writer_id=writer_id,
                 article_status=ArticleStatus.published.value,
                 members_only_flag=True,
+                tags=[tag_1_obj],
             )
             db.add(article_2_obj)
             await db.commit()
@@ -74,6 +91,7 @@ async def initial_load():
                 writer_id=writer_id,
                 article_status=ArticleStatus.published.value,
                 members_only_flag=True,
+                tags=[tag_2_obj],
             )
             db.add(article_3_obj)
             await db.commit()

@@ -7,11 +7,59 @@ from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import literal
 from sqlalchemy import text
+from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import expression
 
 from mysite.articles.constants import ArticleStatus
 from mysite.models import Base
+
+
+class ArticleTags(Base):
+    __tablename__ = "fastapi_article_tags"
+    __table_args__ = {"comment": "association table between article and tag"}
+
+    article_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("fastapi_article.article_id", ondelete="CASCADE"),
+        comment="the id of the article",
+        primary_key=True,
+    )
+
+    tag_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("fastapi_tag.tag_id", ondelete="CASCADE"),
+        comment="the id of the tag",
+        primary_key=True,
+    )
+
+
+class Tag(Base):
+
+    __tablename__ = "fastapi_tag"
+    __table_args__ = {"comment": "general information about article tags"}
+
+    tag_id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        index=True,
+        server_default=text(
+            "gen_random_uuid()",
+        ),
+        comment="unique identifier of the tag",
+    )
+
+    tag_name = Column(String(length=70), nullable=False, unique=True, comment="the name of the tag")
+
+    date_created = Column(
+        DateTime(timezone=True),
+        server_default=text("statement_timestamp()"),
+        nullable=False,
+        comment="the date time in UTC, when the tag was created",
+    )
+
+    articles = relationship("Article", secondary="fastapi_article_tags", back_populates="tags", passive_deletes=True)
+    article_name = association_proxy(target_collection="articles", attr="article_name")
 
 
 class Article(Base):
@@ -29,7 +77,7 @@ class Article(Base):
         comment="unique identifier of the article",
     )
 
-    article_name = Column(String, nullable=False, comment="the content of the article")
+    article_name = Column(String, nullable=False, comment="the name of the article")
     article_content = Column(Text, nullable=True, comment="the content of the article")
 
     date_created = Column(
@@ -70,3 +118,7 @@ class Article(Base):
     )
 
     writer = relationship("Writer", passive_deletes=True, back_populates="articles")
+
+    tags = relationship("Tag", secondary="fastapi_article_tags", back_populates="articles", passive_deletes=True)
+
+    # tag_bulk_upload = relationship("Tag", secondary="fastapi_article_tags", lazy="write_only", passive_deletes=True)

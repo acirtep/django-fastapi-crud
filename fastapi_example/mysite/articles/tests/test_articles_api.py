@@ -6,10 +6,13 @@ import pytest
 from httpx import ASGITransport
 from httpx import AsyncClient
 from pydantic import UUID4
+from pydantic import ValidationError
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from mysite.articles.constants import ArticleStatus
 from mysite.articles.models import Article
+from mysite.articles.schemas import TagInSchema
 from mysite.database import SessionLocal
 from mysite.main import app
 from mysite.writers.models import Writer
@@ -147,3 +150,47 @@ class TestArticle:
             )
         assert response.status_code == 200
         assert len(response.json()["article_content"]) == len(article_obj.article_content)
+
+    async def test_tags_schema_incorrect_length(self):
+        tags = []
+        for i in range(6):
+            tags.append({"tag_name": "".join(random.choice(string.ascii_lowercase) for i in range(10))})
+
+        with pytest.raises(ValidationError):
+            TagInSchema(tags=tags)
+
+    async def test_tags_schema_duplicate_tags(self):
+        tags = [{"tag_name": "tag name"}, {"tag_name": "tag name"}]
+        with pytest.raises(ValidationError):
+            TagInSchema(tags=tags)
+
+    async def test_tags_schema_ok(self):
+        tags = [{"tag_name": "tag name 1"}, {"tag_name": "tag name 2  "}]
+        validated_tags = TagInSchema(tags=tags)
+        assert validated_tags.tags[0].tag_name == "Tag Name 1"
+        assert validated_tags.tags[1].tag_name == "Tag Name 2"
+
+    async def test_add_tags_to_article_ok(self):
+        async with SessionLocal() as db:
+            writer_obj = await db.scalar(select(Writer).where(Writer.writer_id == await self.writer_1_id()))
+            article_obj = await db.scalar(select(Article).limit(1))
+
+        tags = []
+        for i in range(5):
+            tags.append({"tag_name": "".join(random.choice(string.ascii_lowercase) for i in range(10))})
+
+        async with AsyncClient(base_url="http://test", transport=ASGITransport(app=app)) as client:
+            response = await client.put(
+                f"/api/v1/fastapi/articles/{article_obj.article_id}/tags",
+                headers={"Authorization": f"Bearer {writer_obj.writer_id}"},
+                json={"tags": tags},
+            )
+        assert response.status_code == 200
+
+        async with SessionLocal() as db:
+            article_obj = await db.scalar(
+                select(Article)
+                .where(Article.article_id == article_obj.article_id)
+                .options(joinedload(Article.tags, innerjoin=False))
+            )
+            assert len(article_obj.tags) == 5

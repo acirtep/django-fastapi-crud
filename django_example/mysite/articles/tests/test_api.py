@@ -2,12 +2,16 @@ import random
 import string
 import uuid
 
+from django.db.models import Count
 from django.test import TestCase
 from ninja.testing import TestAsyncClient
+from ninja.testing import TestClient
+from pydantic import ValidationError
 
 from mysite.articles.api import articles_router
 from mysite.articles.constants import ArticleStatus
 from mysite.articles.models import Article
+from mysite.articles.schemas import TagInSchema
 from mysite.writers.models import Writer
 
 
@@ -15,6 +19,8 @@ class TestArticle(TestCase):
 
     def setUp(self) -> None:
         self.client = TestAsyncClient(articles_router)
+
+        self.sync_client = TestClient(articles_router)
 
         self.writer_1_obj = Writer.objects.create(
             first_name="string", last_name="string", email="user+1@example.com", about="me"
@@ -35,7 +41,10 @@ class TestArticle(TestCase):
 
         response = await self.client.post(
             "",
-            json={"article_name": "Dummy article", "article_content": "this is a dummy article"},
+            json={
+                "article_name": "Dummy article",
+                "article_content": "this is a dummy article",
+            },
             headers={"Authorization": f"Bearer {self.writer_1_obj.writer_id}"},
         )
 
@@ -98,3 +107,40 @@ class TestArticle(TestCase):
         response = await self.client.get(f"{self.article_obj.article_id}", headers={"key": "thisshouldbeatoken"})
         assert response.status_code == 200
         assert len(response.json()["article_content"]) == len(self.article_obj.article_content)
+
+    async def test_tags_schema_incorrect_length(self):
+        tags = []
+        for i in range(6):
+            tags.append({"tag_name": "".join(random.choice(string.ascii_lowercase) for i in range(10))})
+
+        with self.assertRaises(ValidationError):
+            TagInSchema(tags=tags)
+
+    async def test_tags_schema_duplicate_tags(self):
+        tags = [{"tag_name": "tag name"}, {"tag_name": "tag name"}]
+        with self.assertRaises(ValidationError):
+            TagInSchema(tags=tags)
+
+    async def test_tags_schema_ok(self):
+        tags = [{"tag_name": "tag name 1"}, {"tag_name": "tag name 2  "}]
+        validated_tags = TagInSchema(tags=tags)
+        assert validated_tags.tags[0].tag_name == "Tag Name 1"
+        assert validated_tags.tags[1].tag_name == "Tag Name 2"
+
+    def test_add_tags_to_article_ok(self):
+        tags = []
+        for i in range(5):
+            tags.append({"tag_name": "".join(random.choice(string.ascii_lowercase) for i in range(10))})
+        response = self.sync_client.put(
+            f"{self.article_obj.article_id}/tags",
+            headers={"Authorization": f"Bearer {self.writer_1_obj.writer_id}"},
+            json={"tags": tags},
+        )
+        assert response.status_code == 200
+
+        assert (
+            Article.objects.filter(article_id=self.article_obj.article_id)
+            .annotate(cnt_tags=Count("tags"))
+            .values_list("cnt_tags", flat=True)[0]
+            == 5
+        )

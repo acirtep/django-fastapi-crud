@@ -14,7 +14,7 @@ services:
       - POSTGRES_DB=fastapi_crud
     volumes:
       - ./postgres:/docker-entrypoint-initdb.d
-#    command: "-c log_filename=postgresql.log -c log_statement=all"
+    command: "-c log_filename=postgresql.log -c log_statement=all"
 
 
   fastapi-crud-service:

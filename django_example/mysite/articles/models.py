@@ -7,6 +7,22 @@ from mysite.articles.constants import ArticleStatus
 from mysite.writers.models import Writer
 
 
+class Tag(models.Model):
+    tag_id = models.UUIDField(
+        primary_key=True,
+        db_default=RandomUUID(),
+        db_comment="unique identifier of the tag",
+    )
+
+    tag_name = models.CharField(max_length=70, unique=True, db_comment="the name of the tag")
+
+    date_created = models.DateTimeField(db_default=Now(), db_comment="the date time in UTC, when the tag was created")
+
+    class Meta:
+        db_table = "django_tag"
+        db_table_comment = "general information about article tags"
+
+
 class Article(models.Model):
 
     article_id = models.UUIDField(
@@ -38,6 +54,7 @@ class Article(models.Model):
     writer = models.ForeignKey(
         to=Writer, on_delete=CASCADE, related_name="articles", db_comment="the writer of the article"
     )
+    tags = models.ManyToManyField(Tag, related_name="tags", db_table="django_article_tags")
 
     class Meta:
         db_table = "django_article"
