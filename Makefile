@@ -20,3 +20,7 @@ fastapi_test:
 check:
 	pre-commit install --hook-type commit-msg --hook-type pre-push && \
 	pre-commit run --all-files
+
+ipython:
+	# https://github.com/ipython/ipython/issues/14260
+	docker exec -it fastapi_crud bash -c "pip uninstall -y prompt_toolkit; pip install prompt_toolkit; pip install ipython; bash"

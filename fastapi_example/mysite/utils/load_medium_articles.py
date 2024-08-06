@@ -1,4 +1,5 @@
 import glob
+import os.path
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -11,6 +12,35 @@ from mysite.articles.constants import ArticleStatus
 from mysite.articles.models import Article
 from mysite.database import SessionLocal
 from mysite.writers.models import Writer
+import bs4
+import multiprocessing
+
+
+def get_article_object(writer_id: UUID4, article: str) -> Article:
+    with open(article) as article_file:
+        soup = bs4.BeautifulSoup(article_file, "html.parser")
+        # remove the pre tags (used for code snippets)
+        for s in soup("pre"):
+            s.decompose()
+        # remove the footer tag
+        for s in soup("footer"):
+            s.decompose()
+
+        article_file_name = os.path.basename(article)
+        article_content = soup.text.replace("\n", " ").replace("\t", " ")
+        return Article(
+            article_name=article_file_name.replace(".html", "")[11:].rsplit("-", 1)[0].replace("-", " ").strip(),
+            article_content=article_content,
+            writer_id=writer_id,
+            article_status=ArticleStatus.published.value,
+            members_only_flag=True,
+            date_created=datetime.fromisoformat(article_file_name.replace(".html", "")[:10]).astimezone(
+                tz=timezone.utc
+            ),
+            date_first_published=datetime.fromisoformat(article_file_name.replace(".html", "")[:10]).astimezone(
+                tz=timezone.utc
+            ),
+        )
 
 
 async def get_article_objects(writer_id: UUID4) -> list[Article]:
@@ -18,26 +48,13 @@ async def get_article_objects(writer_id: UUID4) -> list[Article]:
     medium_articles_directory = f"{Path(__file__).parent.parent.parent}/medium_data/"
     medium_articles_path = glob.glob(f"{medium_articles_directory}*.html")
 
-    article_objects = [
-        Article(
-            article_name=article.replace(medium_articles_directory, "")
-            .replace(".html", "")[11:]
-            .rsplit("-", 1)[0]
-            .replace("-", " ")
-            .strip(),
-            article_content=Path(article).read_text(),
-            writer_id=writer_id,
-            article_status=ArticleStatus.published.value,
-            members_only_flag=True,
-            date_created=datetime.fromisoformat(
-                article.replace(medium_articles_directory, "").replace(".html", "")[:10]
-            ).astimezone(tz=timezone.utc),
-            date_first_published=datetime.fromisoformat(
-                article.replace(medium_articles_directory, "").replace(".html", "")[:10]
-            ).astimezone(tz=timezone.utc),
-        )
-        for article in medium_articles_path
-    ]
+    pool = multiprocessing.Pool(processes=4)
+
+    results = [pool.apply_async(get_article_object, args=(writer_id, article)) for article in medium_articles_path]
+
+    pool.close()
+    pool.join()
+    article_objects = [r.get() for r in results]
 
     end_datetime = datetime.now()
 
@@ -70,15 +87,21 @@ async def load_articles(writer_id: UUID4, article_objects: list[Article]):
         db.add_all(article_objects)
         await db.commit()
 
+        # await db.execute(pg_insert(Article).values(article_objects).on_conflict_do_nothing())
+
     end_datetime = datetime.now()
 
     print(f"Loading articles took {(end_datetime-start_datetime).total_seconds()*1000} ms")
 
 
 async def load_medium_data():
+    start_datetime = datetime.now()
     writer_id = await get_writer()
     article_objects = await get_article_objects(writer_id=writer_id)
     await load_articles(writer_id=writer_id, article_objects=article_objects)
+    end_datetime = datetime.now()
+
+    print(f"Parsing and loading articles took {(end_datetime-start_datetime).total_seconds()*1000} ms")
 
 
 if __name__ == "__main__":

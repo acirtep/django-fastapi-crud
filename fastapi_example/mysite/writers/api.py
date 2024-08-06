@@ -1,3 +1,4 @@
+import logging
 from typing import List
 
 from fastapi import APIRouter
@@ -19,6 +20,8 @@ from mysite.writers.schemas import WriterExtendedOutSchema
 from mysite.writers.schemas import WriterInSchema
 from mysite.writers.schemas import WriterOutSchema
 from mysite.writers.schemas import WriterPartnerProgramInSchema
+
+logger = logging.getLogger(__name__)
 
 writers_router = APIRouter(prefix="/writers")
 
