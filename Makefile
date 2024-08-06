@@ -24,3 +24,6 @@ check:
 ipython:
 	# https://github.com/ipython/ipython/issues/14260
 	docker exec -it fastapi_crud bash -c "pip uninstall -y prompt_toolkit; pip install prompt_toolkit; pip install ipython; bash"
+
+load_medium_data:
+	docker exec -it fastapi_crud python mysite/utils/load_medium_articles.py
