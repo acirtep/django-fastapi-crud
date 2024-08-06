@@ -8,6 +8,7 @@ from sqlalchemy import delete
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+from fastapi.responses import HTMLResponse
 
 from mysite.articles.constants import ArticleStatus
 from mysite.articles.models import Article
@@ -100,3 +101,11 @@ async def get_article(article_id: UUID4, auth=Depends(authenticate_user), db: As
         article_obj.article_content = article_obj.article_content[:100]
 
     return article_obj
+
+
+@articles_router.get("/{article_id}/html", response_class=HTMLResponse)
+async def get_article_html(article_id: UUID4, db: AsyncSession = Depends(get_db)):
+    """
+    This code is intended for learning purposes, in the area of using multiple authenticators in one API.
+    """
+    return await db.scalar(select(Article.article_content).where(Article.article_id == article_id))

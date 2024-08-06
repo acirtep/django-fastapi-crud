@@ -1,4 +1,4 @@
-from sqlalchemy import UUID
+from sqlalchemy import UUID, Computed, Index
 from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import DateTime
@@ -7,6 +7,7 @@ from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import literal
 from sqlalchemy import text
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import expression
@@ -65,7 +66,14 @@ class Tag(Base):
 class Article(Base):
 
     __tablename__ = "fastapi_article"
-    __table_args__ = {"comment": "general information about articles"}
+    __table_args__ = (
+        Index(
+            "article_content_simple_with_no_stop_words_idx",
+            "article_content_simple_with_no_stop_words",
+            postgresql_using="gin",
+        ),
+        {"comment": "general information about articles"},
+    )
 
     article_id = Column(
         UUID(as_uuid=True),
@@ -122,3 +130,7 @@ class Article(Base):
     tags = relationship("Tag", secondary="fastapi_article_tags", back_populates="articles", passive_deletes=True)
 
     # tag_bulk_upload = relationship("Tag", secondary="fastapi_article_tags", lazy="write_only", passive_deletes=True)
+
+    article_content_simple_with_no_stop_words = Column(
+        TSVECTOR, Computed("to_tsvector('simple_with_stop_words', article_content)", persisted=True)
+    )

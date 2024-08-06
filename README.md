@@ -9,6 +9,16 @@ The scope of it is for learning purposes only and it is the base for the followi
 3. [Django and FastAPI: One To Many Relationships](https://medium.com/@petrica.leuca/320602329fd2?source=friends_link&sk=1b34bd36b546ee5f32c82e3d43609517)
 4. [Django and FastAPI: Many To Many Relationships](https://medium.com/@petrica.leuca/django-and-fastapi-many-to-many-relationships-4d37487d7c8a)
 
+## Text Analytics With PostgreSQL
+The FastAPI codebase is also use for data analysis of Medium articles, using the text analysis features from PostgreSQL.
+If you are a medium writer, export your articles and place them under `medium_data`.
+Run:
+1. `make fastapi_app`
+2. in another shell, `load_medium_data`
+
+Articles:
+1. [Text Analytics With PostgreSQL And SQLAlchemy - Part1](https://medium.com/@petrica.leuca/163f0c454bbe?source=friends_link&sk=0ca82c2bc4fa5ab2db127014034f7421)
+
 Pre-requisites:
 1. docker
 2. docker-compose
