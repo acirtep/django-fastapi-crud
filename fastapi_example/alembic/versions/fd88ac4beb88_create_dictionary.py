@@ -6,7 +6,8 @@ Create Date: 2024-08-06 12:32:35.869182
 
 """
 
-from typing import Sequence, Union
+from typing import Sequence
+from typing import Union
 
 from alembic import op
 

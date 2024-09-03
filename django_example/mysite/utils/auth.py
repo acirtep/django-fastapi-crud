@@ -1,11 +1,8 @@
-from django.http import Http404
-from django.http import HttpRequest
+from django.http import Http404, HttpRequest
 from django.shortcuts import aget_object_or_404
-from ninja.errors import HttpError
-from ninja.security import APIKeyHeader
-from ninja.security import HttpBearer
-
 from mysite.writers.models import Writer
+from ninja.errors import HttpError
+from ninja.security import APIKeyHeader, HttpBearer
 
 
 class AuthenticateWriter(HttpBearer):

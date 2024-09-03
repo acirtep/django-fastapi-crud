@@ -1,11 +1,11 @@
 import asyncio
 from logging.config import fileConfig
 
-from alembic import context
 from asyncpg import Connection
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from alembic import context
 from mysite import settings
 from mysite.models import Base
 
@@ -19,6 +19,10 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
+
+
+def include_object(object, name, type_, *args, **kwargs):
+    return not object.info.get("skip_autogenerate", False)
 
 
 def run_migrations_offline() -> None:
@@ -56,16 +60,12 @@ async def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = settings.DATABASE_URL
 
-    connectable = async_engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    connectable = async_engine_from_config(configuration, prefix="sqlalchemy.", poolclass=pool.NullPool)
 
     async with connectable.connect() as connection:
 
         def run_migrations(connection: Connection) -> None:
-            context.configure(connection=connection, target_metadata=target_metadata)
+            context.configure(connection=connection, target_metadata=target_metadata, include_object=include_object)
 
             with context.begin_transaction():
                 context.run_migrations()

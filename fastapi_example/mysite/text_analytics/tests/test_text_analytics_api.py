@@ -4,10 +4,10 @@ import string
 import pytest
 from httpx import ASGITransport
 from httpx import AsyncClient
-from mysite.database import SessionLocal
 from pydantic import UUID4
 from sqlalchemy import select
 
+from mysite.database import SessionLocal
 from mysite.main import app
 from mysite.writers.models import Writer
 

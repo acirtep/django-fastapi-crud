@@ -18,6 +18,8 @@ Run:
 
 Articles:
 1. [Text Analytics With PostgreSQL And SQLAlchemy - Part1](https://medium.com/@petrica.leuca/163f0c454bbe?source=friends_link&sk=0ca82c2bc4fa5ab2db127014034f7421)
+2. [3 Ways To Filter On Order In PostgreSQL](https://medium.com/@petrica.leuca/63741f5912a4?sk=c468bd6386ef14b47e920ab88df3d8c1)
+3. [Term Frequency With PostgreSQL] (https://medium.com/@petrica.leuca/fbe914a5de03?source=friends_link&sk=17ba92ecf785d80516ff1095392f6970)
 
 Pre-requisites:
 1. docker

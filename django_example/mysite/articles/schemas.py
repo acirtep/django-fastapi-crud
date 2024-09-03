@@ -2,14 +2,10 @@ from datetime import datetime
 from string import capwords
 from typing import Annotated
 
-from ninja import Schema
-from pydantic import UUID4
-from pydantic import AfterValidator
-from pydantic import Field
-from pydantic import field_validator
-from pydantic_core import PydanticCustomError
-
 from mysite.articles.constants import ArticleStatus
+from ninja import Schema
+from pydantic import UUID4, AfterValidator, Field, field_validator
+from pydantic_core import PydanticCustomError
 
 
 def string_to_capwords(input_string: str | None) -> str | None:

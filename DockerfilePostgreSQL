@@ -1,0 +1,7 @@
+FROM postgres:16.4
+
+RUN apt-get update && apt-get install -y git g++ cmake ninja-build libssl-dev postgresql-server-dev-16 liblz4-dev
+
+RUN git clone https://github.com/duckdb/pg_duckdb
+
+RUN cd pg_duckdb && make install

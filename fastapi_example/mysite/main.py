@@ -7,7 +7,6 @@ from mysite.articles.api import articles_router
 from mysite.text_analytics.api import text_analytics_router
 from mysite.writers.api import writers_router
 
-
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s | %(message)s | %(filename)s:%(lineno)d")
 logger = logging.getLogger(__name__)
 

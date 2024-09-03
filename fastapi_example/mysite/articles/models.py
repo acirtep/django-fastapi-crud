@@ -1,8 +1,10 @@
-from sqlalchemy import UUID, Computed, Index
+from sqlalchemy import UUID
 from sqlalchemy import Boolean
 from sqlalchemy import Column
+from sqlalchemy import Computed
 from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey
+from sqlalchemy import Index
 from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import literal

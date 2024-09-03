@@ -1,9 +1,7 @@
 from datetime import datetime
 
 from ninja import Schema
-from pydantic import UUID4
-from pydantic import EmailStr
-from pydantic import Field
+from pydantic import UUID4, EmailStr, Field
 
 
 class WriterInSchema(Schema):

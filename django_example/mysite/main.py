@@ -1,9 +1,7 @@
 from django.shortcuts import redirect
-from ninja import NinjaAPI
-from ninja import Swagger
-
 from mysite.articles.api import articles_router
 from mysite.writers.api import writers_router
+from ninja import NinjaAPI, Swagger
 
 api = NinjaAPI(docs=Swagger(settings={"displayRequestDuration": True}))
 

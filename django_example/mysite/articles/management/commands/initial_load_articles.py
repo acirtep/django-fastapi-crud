@@ -3,10 +3,8 @@ import string
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
-
 from mysite.articles.constants import ArticleStatus
-from mysite.articles.models import Article
-from mysite.articles.models import Tag
+from mysite.articles.models import Article, Tag
 from mysite.writers.models import Writer
 
 
