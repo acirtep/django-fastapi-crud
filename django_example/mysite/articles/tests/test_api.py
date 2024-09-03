@@ -4,15 +4,13 @@ import uuid
 
 from django.db.models import Count
 from django.test import TestCase
-from ninja.testing import TestAsyncClient
-from ninja.testing import TestClient
-from pydantic import ValidationError
-
 from mysite.articles.api import articles_router
 from mysite.articles.constants import ArticleStatus
 from mysite.articles.models import Article
 from mysite.articles.schemas import TagInSchema
 from mysite.writers.models import Writer
+from ninja.testing import TestAsyncClient, TestClient
+from pydantic import ValidationError
 
 
 class TestArticle(TestCase):

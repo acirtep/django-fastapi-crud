@@ -2,22 +2,21 @@ from typing import List
 
 from asgiref.sync import sync_to_async
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import OuterRef
-from django.db.models import Subquery
+from django.db.models import OuterRef, Subquery
 from django.db.models.functions import JSONObject
 from django.shortcuts import aget_object_or_404
+from mysite.articles.constants import ArticleStatus
+from mysite.articles.models import Article
+from mysite.writers.models import Writer, WriterPartnerProgram
+from mysite.writers.schemas import (
+    WriterExtendedOutSchema,
+    WriterInSchema,
+    WriterOutSchema,
+    WriterPartnerProgramInSchema,
+)
 from ninja import Router
 from ninja.errors import HttpError
 from pydantic import UUID4
-
-from mysite.articles.constants import ArticleStatus
-from mysite.articles.models import Article
-from mysite.writers.models import Writer
-from mysite.writers.models import WriterPartnerProgram
-from mysite.writers.schemas import WriterExtendedOutSchema
-from mysite.writers.schemas import WriterInSchema
-from mysite.writers.schemas import WriterOutSchema
-from mysite.writers.schemas import WriterPartnerProgramInSchema
 
 writers_router = Router()
 

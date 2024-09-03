@@ -2,8 +2,10 @@ version: '3.8'
 
 services:
   fastapi-crud-pg-service:
-    image: postgres:16.2
+    image: postgres_duckdb
     container_name: fastapi_crud_postgres
+    build:
+      dockerfile: DockerfilePostgreSQL
     networks:
       - fastapi-crud-local
     ports:

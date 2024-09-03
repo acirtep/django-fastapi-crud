@@ -1,14 +1,11 @@
-from datetime import datetime
-from datetime import timezone
+from datetime import datetime, timezone
 
 from django.test import TestCase
-from ninja.testing import TestAsyncClient
-
 from mysite.articles.constants import ArticleStatus
 from mysite.articles.models import Article
 from mysite.writers.api import writers_router
-from mysite.writers.models import Writer
-from mysite.writers.models import WriterPartnerProgram
+from mysite.writers.models import Writer, WriterPartnerProgram
+from ninja.testing import TestAsyncClient
 
 
 class TestWriter(TestCase):

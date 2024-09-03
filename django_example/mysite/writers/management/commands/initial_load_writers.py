@@ -1,7 +1,5 @@
 from django.core.management.base import BaseCommand
-
-from mysite.writers.models import Writer
-from mysite.writers.models import WriterPartnerProgram
+from mysite.writers.models import Writer, WriterPartnerProgram
 
 
 class Command(BaseCommand):

@@ -1,19 +1,24 @@
+import asyncio
 import glob
+import multiprocessing
 import os.path
-from datetime import datetime, timezone
+from datetime import datetime
+from datetime import timezone
 from pathlib import Path
 
-import asyncio
-
+import bs4
 from pydantic import UUID4
-from sqlalchemy import select, delete
+from sqlalchemy import delete
+from sqlalchemy import func
+from sqlalchemy import select
+from sqlalchemy import text
 
 from mysite.articles.constants import ArticleStatus
 from mysite.articles.models import Article
 from mysite.database import SessionLocal
+from mysite.text_analytics.models import ArticleTermOccurrenceMV
+from mysite.text_analytics.models import CorpusTermOccurrenceMV
 from mysite.writers.models import Writer
-import bs4
-import multiprocessing
 
 
 def get_article_object(writer_id: UUID4, article: str) -> Article:
@@ -43,7 +48,7 @@ def get_article_object(writer_id: UUID4, article: str) -> Article:
         )
 
 
-async def get_article_objects(writer_id: UUID4) -> list[Article]:
+async def get_article_objects(writer_id: UUID4) -> list[dict]:
     start_datetime = datetime.now()
     medium_articles_directory = f"{Path(__file__).parent.parent.parent}/medium_data/"
     medium_articles_path = glob.glob(f"{medium_articles_directory}*.html")
@@ -78,6 +83,46 @@ async def get_writer() -> UUID4:
     return writer_id
 
 
+async def validate_term_occurrence_mv():
+    async with SessionLocal() as db:
+        print(
+            f"""Number of records in {CorpusTermOccurrenceMV.__tablename__}: {
+                await db.scalar(select(func.count(CorpusTermOccurrenceMV.word)))
+            }"""
+        )
+        print(
+            f"""Number of records in {ArticleTermOccurrenceMV.__tablename__}: {
+                await db.scalar(select(func.count(ArticleTermOccurrenceMV.article_id)))
+            }"""
+        )
+
+        corpus_query = select(
+            CorpusTermOccurrenceMV.word,
+            CorpusTermOccurrenceMV.number_of_occurrences,
+            CorpusTermOccurrenceMV.number_of_articles,
+        )
+        article_query = select(
+            ArticleTermOccurrenceMV.word,
+            func.sum(ArticleTermOccurrenceMV.number_of_occurrences),
+            func.count(ArticleTermOccurrenceMV.article_id),
+        ).group_by(ArticleTermOccurrenceMV.word)
+
+        corpus_vs_article_subquery = corpus_query.except_(article_query).subquery()
+        print(
+            f"""Number of records {CorpusTermOccurrenceMV.__tablename__} vs {ArticleTermOccurrenceMV.__tablename__}: {
+                await db.scalar(select(func.count(corpus_vs_article_subquery.c.word)))
+            }"""
+        )
+
+        article_vs_corpus_subquery = article_query.except_(corpus_query).subquery()
+
+        print(
+            f"""Number of records {ArticleTermOccurrenceMV.__tablename__} vs {CorpusTermOccurrenceMV.__tablename__}: {
+                await db.scalar(select(func.count(article_vs_corpus_subquery.c.word)))
+            }"""
+        )
+
+
 async def load_articles(writer_id: UUID4, article_objects: list[Article]):
     start_datetime = datetime.now()
 
@@ -87,11 +132,15 @@ async def load_articles(writer_id: UUID4, article_objects: list[Article]):
         db.add_all(article_objects)
         await db.commit()
 
-        # await db.execute(pg_insert(Article).values(article_objects).on_conflict_do_nothing())
+        end_datetime = datetime.now()
 
-    end_datetime = datetime.now()
+        print(f"Loading articles took {(end_datetime - start_datetime).total_seconds() * 1000} ms")
 
-    print(f"Loading articles took {(end_datetime-start_datetime).total_seconds()*1000} ms")
+        await db.execute(text(f"refresh materialized view {CorpusTermOccurrenceMV.__tablename__}"))
+        await db.commit()
+        await db.execute(text(f"refresh materialized view {ArticleTermOccurrenceMV.__tablename__}"))
+        await db.commit()
+        await validate_term_occurrence_mv()
 
 
 async def load_medium_data():

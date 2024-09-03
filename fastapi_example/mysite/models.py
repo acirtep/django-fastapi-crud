@@ -6,4 +6,5 @@ class Base(DeclarativeBase):
 
 
 from mysite.articles.models import *  # NOQA
+from mysite.text_analytics.models import *  # NOQA
 from mysite.writers.models import *  # NOQA

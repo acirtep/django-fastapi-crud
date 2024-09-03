@@ -2,11 +2,13 @@ import time
 
 import pandas as pd
 from pandas import DataFrame
-from sqlalchemy import Engine, Select
+from sqlalchemy import Engine
+from sqlalchemy import Select
 from sqlalchemy import event
 from sqlalchemy import text
 from sqlalchemy.dialects import postgresql
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from mysite import settings

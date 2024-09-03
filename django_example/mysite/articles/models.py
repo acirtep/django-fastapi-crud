@@ -2,7 +2,6 @@ from django.contrib.postgres.functions import RandomUUID
 from django.db import models
 from django.db.models import CASCADE
 from django.db.models.functions import Now
-
 from mysite.articles.constants import ArticleStatus
 from mysite.writers.models import Writer
 
