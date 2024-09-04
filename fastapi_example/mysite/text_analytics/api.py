@@ -1,12 +1,13 @@
+import datetime
 from io import BytesIO
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import plotly.express as px
-from fastapi import APIRouter
-from fastapi import Depends
 from PIL import Image
+from fastapi import APIRouter, HTTPException
+from fastapi import Depends
 from pydantic import UUID4
 from sqlalchemy import case
 from sqlalchemy import desc
@@ -32,7 +33,6 @@ text_analytics_router = APIRouter(prefix="/text-analytics")
 
 @text_analytics_router.get("/writer-content-length/{writer_id}", response_class=HTMLResponse)
 async def get_writer_content_length(writer_id: UUID4, db: AsyncSession = Depends(get_db)):
-
     writer_obj = await db.scalar(select(Writer).where(Writer.writer_id == writer_id))
 
     query = (
@@ -86,99 +86,77 @@ async def get_writer_most_used_words(
 
 @text_analytics_router.get("/wordcloud", response_class=Response, responses={200: {"content": {"image/png": {}}}})
 async def get_wordcloud(db: AsyncSession = Depends(get_db)):
-
-    # unnest_subquery = (
-    #     (select(column("lexeme")).select_from(func.unnest(Article.article_content_simple_with_no_stop_words)))
-    #     .subquery("unnest_query")
-    #     .lateral()
-    # )
-    #
-    # medium_content = await db.scalar(select(func.string_agg(unnest_subquery.c.lexeme, " ")).select_from(Article))
-
-    writer_id = await db.scalar(select(Writer.writer_id).where(Writer.email == "user+medium_data@example.com"))
-
-    number_of_articles, limit_words = (
-        await db.execute(
-            select(
-                func.count(Article.article_id),
-                func.sum(
-                    case(
-                        (func.length(Article.article_content_simple_with_no_stop_words) >= 5, 5),
-                        else_=func.length(Article.article_content_simple_with_no_stop_words),
-                    )
-                ),
-            ).where(Article.writer_id == writer_id)
+    word_occurrences_subquery = select(
+        ArticleTermOccurrenceMV.word,
+        ArticleTermOccurrenceMV.number_of_occurrences,
+        func.row_number()
+        .over(
+            partition_by=ArticleTermOccurrenceMV.article_id,
+            order_by=desc(ArticleTermOccurrenceMV.number_of_occurrences),
         )
-    ).first()
+        .label("rank"),
+    ).subquery("word_occurrences_subquery")
 
-    tf_cte = (
+    top_word_occurrences_subquery = (
         select(
-            ArticleTermOccurrenceMV.article_id,
-            Article.article_name,
-            ArticleTermOccurrenceMV.word,
-            (
-                ArticleTermOccurrenceMV.number_of_occurrences
-                / func.length(Article.article_content_simple_with_no_stop_words)
-            ).label("tf"),
+            word_occurrences_subquery.c.word,
+            func.sum(word_occurrences_subquery.c.number_of_occurrences).label("number_of_occurrences"),
         )
-        .join(Article, ArticleTermOccurrenceMV.article_id == Article.article_id)
-        .where(Article.writer_id == writer_id)
-    ).cte("tf_cte")
+        .where(word_occurrences_subquery.c.rank <= 20)
+        .group_by(word_occurrences_subquery.c.word)
+    ).subquery("top_word_occurrences_subquery")
 
-    idf_cte = (
-        (
-            select(
-                CorpusTermOccurrenceMV.word,
-                func.log((number_of_articles / CorpusTermOccurrenceMV.number_of_articles)).label("idf"),
+    # words_with_frequencies = {
+    #     db_record[0]: db_record[1] for db_record in await db.execute(select(top_word_occurrences_subquery))
+    # }
+
+    words_with_frequencies = await db.scalar(
+        select(
+            func.json_object_agg(
+                top_word_occurrences_subquery.c.word, top_word_occurrences_subquery.c.number_of_occurrences
             )
         )
-        .cte("idf_cte")
-        .prefix_with("MATERIALIZED")
     )
 
-    tf_idf_count_query = (
-        select(
-            tf_cte.c.article_name,
-            tf_cte.c.word,
-            (tf_cte.c.tf * idf_cte.c.idf * 100).label("score"),
-            literal("TF-IDF").label("rank_type"),
+    if not words_with_frequencies:
+        raise HTTPException(status_code=404, detail="No data found")
+
+    try:
+
+        picture_np = np.asarray(
+            Image.open(f"{Path(__file__).parent.parent.parent}/medium_data/100_1.png"), dtype="int32"
         )
-        .join(idf_cte, tf_cte.c.word == idf_cte.c.word)
-        .order_by(
-            func.row_number().over(partition_by=tf_cte.c.article_id, order_by=desc(tf_cte.c.tf * idf_cte.c.idf * 100))
+
+        wc = WordCloud(
+            background_color="white",
+            mask=picture_np,
+            contour_width=3,
+            contour_color="gold",
+            colormap="autumn",
+            collocations=False,
+            stopwords=["ve"],
         )
-        .limit(limit_words)
-    )
-    medium_content = await db.scalar(select(func.string_agg(tf_idf_count_query.c.word, " ")))
-    medium_logo = np.asarray(
-        Image.open(f"{Path(__file__).parent.parent.parent}/medium_data/medium_logo.png"), dtype="int32"
-    )
+        wc.generate_from_frequencies(words_with_frequencies)
 
-    wc = WordCloud(
-        background_color="black",
-        # max_words=limit_words,
-        mask=medium_logo,
-        contour_width=3,
-        contour_color="white",
-        colormap="autumn",
-    )
-    wc.generate(medium_content)
+        fig = plt.figure(figsize=(20, 5))
+        plt.imshow(wc, interpolation="bilinear")
+        plt.axis("off")
 
-    # wc.to_file(path.join(path.join(f"{Path(__file__).parent.parent.parent}/medium_data/", "medium.png")))
+        with BytesIO() as buf:
+            fig.savefig(buf, format="png")
+            plt.close()
 
-    fig = plt.figure(figsize=(10, 2))
-    plt.imshow(wc, interpolation="bilinear")
-    plt.axis("off")
+            return Response(
+                content=buf.getvalue(),
+                headers={
+                    "Content-Disposition": f'inline; filename="wordcloud-{datetime.datetime.now().isoformat()}.png"'  # NOQA
+                },
+                media_type="image/png",
+            )
 
-    buf = BytesIO()
-    fig.savefig(buf, format="png")
-    plt.close()
-
-    return Response(
-        content=buf.getvalue(),
-        headers={"Content-Disposition": 'inline; filename="wordcloud.png"'},
-        media_type="image/png",
-    )
+    except Exception:
+        # log error
+        raise HTTPException(status_code=500, detail="Something went wrong")
 
 
 @text_analytics_router.get("/tf-idf-most-user-word", response_class=HTMLResponse)
@@ -271,7 +249,7 @@ async def get_term_frequency_corpus(
     )
 
     for row in range(1, number_of_articles + 1):
-        fig.update_yaxes(showticklabels=True, matches=f"y{(row-1) * 2 + 1}", title=None, row=row)
+        fig.update_yaxes(showticklabels=True, matches=f"y{(row - 1) * 2 + 1}", title=None, row=row)
 
     annotations = []
     col_tf_idf = 1
@@ -334,7 +312,6 @@ async def get_term_frequency_corpus(
 async def get_order_by_plot(
     db: AsyncSession = Depends(get_db),
 ):
-
     writer_id = await db.scalar(select(Writer.writer_id).where(Writer.email == "user+medium_data@example.com"))
 
     df = await db.run_sync(

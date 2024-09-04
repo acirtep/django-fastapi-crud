@@ -66,3 +66,11 @@ class TestTextAnalytics:
             )
 
         assert response.status_code == 200
+
+    async def test_get_wordcloud(self):
+        async with AsyncClient(base_url="http://test", transport=ASGITransport(app=app)) as client:
+            response = await client.get(
+                "/api/v1/fastapi/text-analytics/wordcloud",
+            )
+
+        assert response.status_code == 404
